@@ -7,53 +7,108 @@ app = Flask(__name__)
 
 print("Pelican House iniciado...")
 
-# 🔌 CONEXIÓN (local o Render)
-conn = psycopg2.connect(
-    dbname=os.environ.get("DB_NAME", "hotel_db"),
-    user=os.environ.get("DB_USER", "postgres"),
-    password=os.environ.get("DB_PASSWORD", "12345"),
-    host=os.environ.get("DB_HOST", "localhost"),
-    port=os.environ.get("DB_PORT", "5432")
-)
+# Conexión a PostgreSQL
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+if DATABASE_URL:
+    conn = psycopg2.connect(DATABASE_URL)
+else:
+    conn = psycopg2.connect(
+        dbname="hotel_db",
+        user="postgres",
+        password="12345",
+        host="localhost",
+        port="5432"
+    )
 
 cursor = conn.cursor()
 
-# 🔄 ACTUALIZAR ESTADOS
+# Crear tablas automáticamente
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS habitaciones (
+    id SERIAL PRIMARY KEY,
+    numero VARCHAR(10) UNIQUE,
+    tipo VARCHAR(50),
+    estado VARCHAR(20) DEFAULT 'activa'
+);
+""")
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS reservas (
+    id SERIAL PRIMARY KEY,
+    habitacion_id INT REFERENCES habitaciones(id),
+    cliente VARCHAR(100),
+    fecha_inicio DATE,
+    fecha_fin DATE,
+    estado VARCHAR(20) DEFAULT 'confirmada'
+);
+""")
+
+# Insertar habitaciones solo si no existen
+cursor.execute("""
+INSERT INTO habitaciones (numero, tipo, estado)
+SELECT '01', 'simple', 'activa'
+WHERE NOT EXISTS (SELECT 1 FROM habitaciones WHERE numero = '01');
+""")
+
+cursor.execute("""
+INSERT INTO habitaciones (numero, tipo, estado)
+SELECT '02', 'doble', 'activa'
+WHERE NOT EXISTS (SELECT 1 FROM habitaciones WHERE numero = '02');
+""")
+
+cursor.execute("""
+INSERT INTO habitaciones (numero, tipo, estado)
+SELECT '03', 'doble', 'activa'
+WHERE NOT EXISTS (SELECT 1 FROM habitaciones WHERE numero = '03');
+""")
+
+cursor.execute("""
+INSERT INTO habitaciones (numero, tipo, estado)
+SELECT '04', 'suite', 'activa'
+WHERE NOT EXISTS (SELECT 1 FROM habitaciones WHERE numero = '04');
+""")
+
+conn.commit()
+
+
 def actualizar_estados():
     cursor.execute("""
         UPDATE reservas
         SET estado = 'finalizada'
         WHERE estado = 'confirmada'
-        AND fecha_fin < CURRENT_DATE;
+          AND fecha_fin < CURRENT_DATE;
     """)
     conn.commit()
 
-# 🏠 HOME
+
 @app.route("/")
 def home():
     return render_template("index.html")
 
-# 🟢 HABITACIONES DISPONIBLES
+
 @app.route("/disponibles")
 def disponibles():
     actualizar_estados()
     hoy = date.today()
 
     cursor.execute("""
-    SELECT numero FROM habitaciones h
-    WHERE NOT EXISTS (
-        SELECT 1 FROM reservas r
-        WHERE r.habitacion_id = h.id
-        AND r.estado = 'confirmada'
-        AND %s >= r.fecha_inicio
-        AND %s < r.fecha_fin
-    )
-    ORDER BY numero;
+        SELECT numero
+        FROM habitaciones h
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM reservas r
+            WHERE r.habitacion_id = h.id
+              AND r.estado = 'confirmada'
+              AND %s >= r.fecha_inicio
+              AND %s < r.fecha_fin
+        )
+        ORDER BY numero;
     """, (hoy, hoy))
 
     return jsonify([h[0] for h in cursor.fetchall()])
 
-# 🏨 CREAR RESERVA
+
 @app.route("/reservar")
 def reservar():
     numero = request.args.get("habitacion")
@@ -65,7 +120,13 @@ def reservar():
         if not numero or not cliente or not inicio or not fin:
             return "Completa todos los campos ❌"
 
-        cursor.execute("SELECT id FROM habitaciones WHERE numero=%s;", (numero,))
+        if fin <= inicio:
+            return "La fecha de salida debe ser mayor que la de entrada ❌"
+
+        cursor.execute(
+            "SELECT id FROM habitaciones WHERE numero = %s;",
+            (numero,)
+        )
         resultado = cursor.fetchone()
 
         if not resultado:
@@ -74,18 +135,19 @@ def reservar():
         habitacion_id = resultado[0]
 
         cursor.execute("""
-        SELECT 1 FROM reservas
-        WHERE habitacion_id = %s
-        AND estado='confirmada'
-        AND NOT (%s >= fecha_fin OR %s <= fecha_inicio)
+            SELECT 1
+            FROM reservas
+            WHERE habitacion_id = %s
+              AND estado = 'confirmada'
+              AND NOT (%s >= fecha_fin OR %s <= fecha_inicio)
         """, (habitacion_id, inicio, fin))
 
         if cursor.fetchone():
             return "Ya está reservada en esas fechas ❌"
 
         cursor.execute("""
-        INSERT INTO reservas (habitacion_id, cliente, fecha_inicio, fecha_fin, estado)
-        VALUES (%s,%s,%s,%s,'confirmada');
+            INSERT INTO reservas (habitacion_id, cliente, fecha_inicio, fecha_fin, estado)
+            VALUES (%s, %s, %s, %s, 'confirmada');
         """, (habitacion_id, cliente, inicio, fin))
 
         conn.commit()
@@ -95,20 +157,20 @@ def reservar():
         conn.rollback()
         return f"Error: {e}"
 
-# 📋 VER RESERVAS
+
 @app.route("/reservas")
 def ver_reservas():
     actualizar_estados()
     hoy = date.today()
 
     cursor.execute("""
-    SELECT r.id, h.numero, r.cliente, r.fecha_inicio, r.fecha_fin
-    FROM reservas r
-    JOIN habitaciones h ON r.habitacion_id = h.id
-    WHERE r.estado='confirmada'
-    AND %s >= r.fecha_inicio
-    AND %s < r.fecha_fin
-    ORDER BY r.fecha_inicio;
+        SELECT r.id, h.numero, r.cliente, r.fecha_inicio, r.fecha_fin
+        FROM reservas r
+        JOIN habitaciones h ON r.habitacion_id = h.id
+        WHERE r.estado = 'confirmada'
+          AND %s >= r.fecha_inicio
+          AND %s < r.fecha_fin
+        ORDER BY r.fecha_inicio, h.numero;
     """, (hoy, hoy))
 
     datos = cursor.fetchall()
@@ -125,20 +187,25 @@ def ver_reservas():
 
     return jsonify(reservas)
 
-# ❌ CANCELAR
+
 @app.route("/cancelar")
 def cancelar():
     reserva_id = request.args.get("id")
 
-    cursor.execute("""
-    UPDATE reservas
-    SET estado='cancelada'
-    WHERE id=%s;
-    """, (reserva_id,))
+    try:
+        cursor.execute("""
+            UPDATE reservas
+            SET estado = 'cancelada'
+            WHERE id = %s;
+        """, (reserva_id,))
 
-    conn.commit()
-    return "Cancelada"
+        conn.commit()
+        return "Reserva cancelada ✅"
 
-# ▶️ RUN
+    except Exception as e:
+        conn.rollback()
+        return f"Error: {e}"
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
