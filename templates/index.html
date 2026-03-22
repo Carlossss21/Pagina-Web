@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pelican House</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f3f7f5;
+    color: #2b2b2b;
+}
+
+.header {
+    width: 90%;
+    margin: 0 auto;
+    margin-top: 10px;
+    background: linear-gradient(90deg, #21c7bb, #18b7a8);
+    color: white;
+    border-bottom-left-radius: 24px;
+    border-bottom-right-radius: 24px;
+    padding: 24px 28px 30px;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 42px;
+    font-weight: 700;
+}
+
+.header p {
+    margin: 8px 0 0;
+    font-size: 18px;
+}
+
+.container {
+    width: 90%;
+    margin: 24px auto;
+}
+
+.top-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 22px;
+    align-items: start;
+}
+
+.card {
+    background: #fff;
+    border-radius: 22px;
+    padding: 24px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+}
+
+.card h3 {
+    margin: 0;
+    font-size: 34px;
+    font-weight: 600;
+}
+
+.card p.sub {
+    margin: 8px 0 20px;
+    color: #6f6f6f;
+    font-size: 18px;
+}
+
+.btn {
+    border: none;
+    border-radius: 14px;
+    padding: 12px 18px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.btn-green {
+    background: #22b8ab;
+    color: white;
+}
+
+.btn-green:hover {
+    opacity: 0.92;
+}
+
+.btn-light {
+    background: #f0f0f0;
+    color: #4b4b4b;
+}
+
+.btn-light:hover {
+    background: #e7e7e7;
+}
+
+.btn-red {
+    background: #ef4444;
+    color: white;
+}
+
+.btn-red:hover {
+    background: #dc2626;
+}
+
+.rooms-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.room-box {
+    background: #f6fbfa;
+    border: 1px solid #dff3f1;
+    border-radius: 16px;
+    padding: 16px;
+    text-align: left;
+}
+
+.room-box h4 {
+    margin: 0 0 6px;
+    font-size: 22px;
+}
+
+.room-box p {
+    margin: 0;
+    font-size: 14px;
+    color: #6f6f6f;
+}
+
+.room-status {
+    display: inline-block;
+    margin-top: 10px;
+    background: #dff7ee;
+    color: #188a5a;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.empty-box {
+    margin-top: 18px;
+    padding: 16px;
+    border-radius: 14px;
+    background: #fafafa;
+    color: #7a7a7a;
+}
+
+.form-group {
+    margin-bottom: 14px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 15px;
+    color: #5f5f5f;
+    font-weight: 600;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid #ececec;
+    background: white;
+    font-size: 15px;
+}
+
+.two-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+#respuesta {
+    margin-top: 16px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: #fff5f5;
+    color: #a94442;
+    min-height: 20px;
+}
+
+.bottom-card {
+    margin-top: 22px;
+}
+
+.reserva-item {
+    background: #f8f8f8;
+    border-radius: 16px;
+    padding: 16px;
+    margin-top: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.reserva-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.reserva-titulo {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.reserva-fecha {
+    color: #6f6f6f;
+    font-size: 14px;
+}
+
+@media (max-width: 900px) {
+    .top-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .header h1 {
+        font-size: 34px;
+    }
+
+    .card h3 {
+        font-size: 28px;
+    }
+}
+
+@media (max-width: 600px) {
+    .rooms-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .two-cols {
+        grid-template-columns: 1fr;
+    }
+
+    .reserva-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🏡 Pelican House</h1>
+    <p>Sistema de reservas y disponibilidad para tu hospedaje.</p>
+</div>
+
+<div class="container">
+
+    <div class="top-grid">
+
+        <div class="card">
+            <h3>Habitaciones disponibles</h3>
+            <p class="sub">Consulta las habitaciones libres para hoy.</p>
+
+            <button class="btn btn-green" onclick="verDisponibles()">Ver disponibles</button>
+
+            <div id="lista" class="rooms-grid"></div>
+            <div id="sinDisponibles" class="empty-box" style="display:none;">
+                No hay habitaciones disponibles en este momento.
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Nueva reserva</h3>
+            <p class="sub">Registra una reserva en pocos segundos.</p>
+
+            <div class="form-group">
+                <label>Habitación</label>
+                <input id="habitacion" placeholder="Ej: 03">
+            </div>
+
+            <div class="form-group">
+                <label>Cliente</label>
+                <input id="cliente" placeholder="Nombre del cliente">
+            </div>
+
+            <div class="two-cols">
+                <div class="form-group">
+                    <label>Fecha de entrada</label>
+                    <input type="date" id="inicio">
+                </div>
+
+                <div class="form-group">
+                    <label>Fecha de salida</label>
+                    <input type="date" id="fin">
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn btn-green" onclick="reservar()">Guardar reserva</button>
+                <button class="btn btn-light" onclick="limpiar()">Limpiar</button>
+            </div>
+
+            <div id="respuesta"></div>
+        </div>
+
+    </div>
+
+    <div class="card bottom-card">
+        <h3>Reservas actuales</h3>
+        <p class="sub">Consulta y cancela reservas activas.</p>
+
+        <button class="btn btn-green" onclick="verReservas()">Actualizar reservas</button>
+
+        <div id="reservas"></div>
+    </div>
+
+</div>
+
+<script>
+function verDisponibles() {
+    fetch('/disponibles')
+    .then(res => res.json())
+    .then(data => {
+        let lista = document.getElementById("lista");
+        let vacio = document.getElementById("sinDisponibles");
+
+        lista.innerHTML = "";
+
+        if (data.length === 0) {
+            vacio.style.display = "block";
+            return;
+        }
+
+        vacio.style.display = "none";
+
+        data.forEach(h => {
+            lista.innerHTML += `
+                <div class="room-box">
+                    <h4>Habitación ${h}</h4>
+                    <p>Lista para reservar</p>
+                    <span class="room-status">Disponible</span>
+                </div>
+            `;
+        });
+    });
+}
+
+function reservar() {
+    let h = document.getElementById("habitacion").value;
+    let c = document.getElementById("cliente").value;
+    let i = document.getElementById("inicio").value;
+    let f = document.getElementById("fin").value;
+
+    fetch(`/reservar?habitacion=${encodeURIComponent(h)}&cliente=${encodeURIComponent(c)}&inicio=${encodeURIComponent(i)}&fin=${encodeURIComponent(f)}`)
+    .then(res => res.text())
+    .then(data => {
+        document.getElementById("respuesta").innerText = data;
+        verReservas();
+        verDisponibles();
+    });
+}
+
+function verReservas() {
+    fetch('/reservas')
+    .then(res => res.json())
+    .then(data => {
+        let lista = document.getElementById("reservas");
+        lista.innerHTML = "";
+
+        data.forEach(r => {
+            lista.innerHTML += `
+                <div class="reserva-item">
+                    <div class="reserva-info">
+                        <div class="reserva-titulo">Habitación ${r.habitacion} · ${r.cliente}</div>
+                        <div class="reserva-fecha">Desde ${r.inicio} hasta ${r.fin}</div>
+                    </div>
+                    <button class="btn btn-red" onclick="cancelar(${r.id})">Cancelar</button>
+                </div>
+            `;
+        });
+    });
+}
+
+function cancelar(id) {
+    fetch(`/cancelar?id=${id}`)
+    .then(() => verReservas());
+}
+
+function limpiar() {
+    document.getElementById("habitacion").value = "";
+    document.getElementById("cliente").value = "";
+    document.getElementById("inicio").value = "";
+    document.getElementById("fin").value = "";
+    document.getElementById("respuesta").innerText = "";
+}
+</script>
+
+</body>
+</html>
